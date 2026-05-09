@@ -50,6 +50,36 @@ CONFIG_PORT="$("$VENV_DIR/bin/python" -c 'import sys, yaml; data = yaml.safe_loa
 HOST="${HOST:-$CONFIG_HOST}"
 PORT="${PORT:-$CONFIG_PORT}"
 
+if ! "$VENV_DIR/bin/python" - "$HOST" "$PORT" <<'PY'
+import socket
+import sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+
+probe_host = "" if host in {"0.0.0.0", "::"} else host
+family = socket.AF_INET6 if ":" in host else socket.AF_INET
+
+try:
+    with socket.socket(family, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind((probe_host, port))
+except PermissionError:
+    print(f"Port check failed: permission denied while binding {host}:{port}", file=sys.stderr)
+    sys.exit(2)
+except OSError as exc:
+    print(f"Port check failed: cannot bind {host}:{port}: {exc}", file=sys.stderr)
+    sys.exit(1)
+PY
+then
+  echo "Port $PORT is not available on $HOST." >&2
+  echo "Check the listener with one of:" >&2
+  echo "  sudo ss -ltnp 'sport = :$PORT'" >&2
+  echo "  sudo lsof -nP -iTCP:$PORT -sTCP:LISTEN" >&2
+  echo "  sudo fuser -v ${PORT}/tcp" >&2
+  exit 1
+fi
+
 echo "Starting Oniros AI Gateway"
 echo "  config: $CONFIG"
 echo "  listen: http://$HOST:$PORT"
