@@ -84,6 +84,47 @@ POST /anthropic/anthropic/v1/messages
 
 ## 快速开始
 
+### 一键启动
+
+项目提供了一键启动脚本：
+
+```bash
+./scripts/start.sh
+```
+
+脚本会自动完成：
+
+- 创建 `.venv`。
+- 安装运行依赖。
+- 如果没有 `config.yaml`，从 `config.example.yaml` 复制一份。
+- 使用 `uvicorn` 启动服务。
+
+默认监听：
+
+```text
+http://0.0.0.0:8000
+```
+
+可通过环境变量覆盖：
+
+```bash
+HOST=127.0.0.1 PORT=8001 ./scripts/start.sh
+```
+
+指定配置文件：
+
+```bash
+CONFIG=/opt/oniros-ai-gateway/config.yaml ./scripts/start.sh
+```
+
+安装开发依赖并启动：
+
+```bash
+INSTALL_DEV=1 ./scripts/start.sh
+```
+
+首次启动后，请编辑 `config.yaml`，把 `api_key` 占位值替换成真实上游密钥。
+
 ### 1. 创建虚拟环境
 
 ```bash
