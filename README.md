@@ -97,7 +97,8 @@ POST /anthropic/anthropic/v1/messages
 - 创建 `.venv`。
 - 安装运行依赖。
 - 如果没有 `config.yaml`，从 `config.example.yaml` 复制一份。
-- 使用 `uvicorn` 启动服务。
+- 使用 `uvicorn` 后台启动服务。
+- 写入 PID 文件和日志文件。
 
 默认监听地址来自 `config.yaml`：
 
@@ -121,6 +122,24 @@ CONFIG=/opt/oniros-ai-gateway/config.yaml ./scripts/start.sh
 
 ```bash
 INSTALL_DEV=1 ./scripts/start.sh
+```
+
+前台启动，方便调试：
+
+```bash
+FOREGROUND=1 ./scripts/start.sh
+```
+
+查看日志：
+
+```bash
+tail -f logs/gateway.log
+```
+
+停止后台服务：
+
+```bash
+kill "$(cat logs/gateway.pid)"
 ```
 
 首次启动后，请编辑 `config.yaml`，把 `api_key` 占位值替换成真实上游密钥。

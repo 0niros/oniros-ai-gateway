@@ -8,6 +8,10 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 VENV_DIR="${VENV_DIR:-.venv}"
 CONFIG="${CONFIG:-config.yaml}"
 INSTALL_DEV="${INSTALL_DEV:-0}"
+FOREGROUND="${FOREGROUND:-0}"
+LOG_DIR="${LOG_DIR:-logs}"
+PID_FILE="${PID_FILE:-$LOG_DIR/gateway.pid}"
+LOG_FILE="${LOG_FILE:-$LOG_DIR/gateway.log}"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "Python interpreter not found: $PYTHON_BIN" >&2
@@ -50,6 +54,20 @@ CONFIG_PORT="$("$VENV_DIR/bin/python" -c 'import sys, yaml; data = yaml.safe_loa
 HOST="${HOST:-$CONFIG_HOST}"
 PORT="${PORT:-$CONFIG_PORT}"
 
+mkdir -p "$LOG_DIR"
+
+if [ -f "$PID_FILE" ]; then
+  EXISTING_PID="$(cat "$PID_FILE")"
+  if [ -n "$EXISTING_PID" ] && kill -0 "$EXISTING_PID" >/dev/null 2>&1; then
+    echo "Oniros AI Gateway appears to be running already."
+    echo "  pid: $EXISTING_PID"
+    echo "  pid_file: $PID_FILE"
+    echo "Stop it first: kill $EXISTING_PID"
+    exit 1
+  fi
+  rm -f "$PID_FILE"
+fi
+
 if ! "$VENV_DIR/bin/python" - "$HOST" "$PORT" <<'PY'
 import socket
 import sys
@@ -83,5 +101,47 @@ fi
 echo "Starting Oniros AI Gateway"
 echo "  config: $CONFIG"
 echo "  listen: http://$HOST:$PORT"
+echo "  log: $LOG_FILE"
 
-ONIROS_CONFIG="$CONFIG" exec "$UVICORN" app.main:app --host "$HOST" --port "$PORT"
+if [ "$FOREGROUND" = "1" ]; then
+  ONIROS_CONFIG="$CONFIG" exec "$UVICORN" app.main:app --host "$HOST" --port "$PORT"
+fi
+
+"$VENV_DIR/bin/python" - "$LOG_FILE" "$PID_FILE" "$CONFIG" "$UVICORN" "$HOST" "$PORT" <<'PY'
+import os
+import subprocess
+import sys
+
+log_file, pid_file, config, uvicorn, host, port = sys.argv[1:]
+env = os.environ.copy()
+env["ONIROS_CONFIG"] = config
+
+log = open(log_file, "ab", buffering=0)
+process = subprocess.Popen(
+    [uvicorn, "app.main:app", "--host", host, "--port", port],
+    stdin=subprocess.DEVNULL,
+    stdout=log,
+    stderr=subprocess.STDOUT,
+    env=env,
+    start_new_session=True,
+)
+
+with open(pid_file, "w", encoding="utf-8") as handle:
+    handle.write(str(process.pid))
+PY
+
+GATEWAY_PID="$(cat "$PID_FILE")"
+
+sleep 1
+if ! kill -0 "$GATEWAY_PID" >/dev/null 2>&1; then
+  echo "Oniros AI Gateway failed to stay running. Last log lines:" >&2
+  tail -40 "$LOG_FILE" >&2 || true
+  rm -f "$PID_FILE"
+  exit 1
+fi
+
+echo "Oniros AI Gateway started in background."
+echo "  pid: $GATEWAY_PID"
+echo "  pid_file: $PID_FILE"
+echo "  log: $LOG_FILE"
+echo "  health: http://$HOST:$PORT/health"
