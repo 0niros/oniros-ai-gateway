@@ -79,13 +79,29 @@ class Settings(BaseModel):
 
 
 def load_settings(path: str | Path | None = None) -> Settings:
-    config_path = Path(path or os.getenv("ONIROS_CONFIG", "config.yaml"))
+    config_path = resolve_config_path(path)
     try:
         raw = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     except FileNotFoundError as exc:
         raise RuntimeError(f"configuration file not found: {config_path}") from exc
     except yaml.YAMLError as exc:
         raise RuntimeError(f"invalid YAML configuration: {config_path}") from exc
+
+    try:
+        return Settings.model_validate(raw)
+    except ValidationError as exc:
+        raise RuntimeError(f"invalid configuration: {exc}") from exc
+
+
+def resolve_config_path(path: str | Path | None = None) -> Path:
+    return Path(path or os.getenv("ONIROS_CONFIG", "config.yaml"))
+
+
+def parse_settings_yaml(content: str) -> Settings:
+    try:
+        raw = yaml.safe_load(content) or {}
+    except yaml.YAMLError as exc:
+        raise RuntimeError(f"invalid YAML configuration: {exc}") from exc
 
     try:
         return Settings.model_validate(raw)

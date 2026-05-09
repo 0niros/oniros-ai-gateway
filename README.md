@@ -197,6 +197,29 @@ curl http://127.0.0.1:8000/health
 {"status":"ok"}
 ```
 
+### 7. 打开配置页面
+
+启动服务后访问：
+
+```text
+http://127.0.0.1:8000/admin/config
+```
+
+页面会要求输入网关 API Key，例如示例配置里的：
+
+```text
+local-dev-key
+```
+
+点击“读取配置”可以加载当前 `config.yaml`，编辑后点击“保存配置”。保存时网关会先校验 YAML 和配置结构，校验通过才会写入文件，并立即刷新内存中的路由、鉴权和 HTTP 超时配置。
+
+注意：
+
+- 配置页面不会绕过鉴权，读取和保存都需要网关 API Key。
+- 保存的是当前服务使用的配置文件，也就是 `ONIROS_CONFIG` 指向的文件，默认是 `config.yaml`。
+- 修改 `gateway_auth.api_keys` 后，后续读取和保存需要使用新的网关 API Key。
+- 真实上游 `api_key` 会显示在页面里，只在可信内网环境使用。
+
 ## 配置说明
 
 示例配置见 [config.example.yaml](config.example.yaml)。
