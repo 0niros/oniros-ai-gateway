@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oniros AI Gateway 配置</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f6f7f9;
+      color: #17181a;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 28px 20px 40px;
+    }
+
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    p {
+      margin: 8px 0 0;
+      color: #5d6470;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 16px 0;
+    }
+
+    input {
+      width: min(460px, 100%);
+      padding: 10px 12px;
+      border: 1px solid #c8cdd6;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px 14px;
+      border: 1px solid #1f6feb;
+      border-radius: 6px;
+      background: #1f6feb;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: white;
+      color: #1f6feb;
+    }
+
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      min-height: 62vh;
+      padding: 14px;
+      border: 1px solid #c8cdd6;
+      border-radius: 8px;
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      resize: vertical;
+      background: white;
+      color: #17181a;
+    }
+
+    .status {
+      min-height: 22px;
+      font-size: 14px;
+    }
+
+    .ok {
+      color: #167a3b;
+    }
+
+    .err {
+      color: #b42318;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #111315;
+        color: #eceff3;
+      }
+
+      p {
+        color: #a6adbb;
+      }
+
+      input,
+      textarea,
+      button.secondary {
+        background: #181b1f;
+        color: #eceff3;
+        border-color: #3b424d;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Oniros AI Gateway 配置</h1>
+        <p>编辑 config.yaml。保存前会校验 YAML 和网关配置结构，保存成功后立即刷新内存配置。</p>
+      </div>
+    </header>
+    <div class="toolbar">
+      <input
+        id="token"
+        type="password"
+        placeholder="网关 API Key，例如 local-dev-key"
+        autocomplete="current-password"
+      >
+      <button id="load">读取配置</button>
+      <button id="save">保存配置</button>
+      <button id="remember" class="secondary">记住 Key</button>
+    </div>
+    <div id="status" class="status"></div>
+    <textarea
+      id="content"
+      spellcheck="false"
+      placeholder="点击读取配置后会显示 config.yaml"
+    ></textarea>
+  </main>
+  <script>
+    const tokenEl = document.getElementById("token");
+    const contentEl = document.getElementById("content");
+    const statusEl = document.getElementById("status");
+    const loadBtn = document.getElementById("load");
+    const saveBtn = document.getElementById("save");
+    const rememberBtn = document.getElementById("remember");
+    tokenEl.value = localStorage.getItem("onirosGatewayToken") || "";
+
+    function setStatus(message, ok) {
+      statusEl.textContent = message;
+      statusEl.className = ok ? "status ok" : "status err";
+    }
+
+    function headers() {
+      return {"Authorization": "Bearer " + tokenEl.value};
+    }
+
+    async function loadConfig() {
+      setStatus("正在读取配置...", true);
+      const res = await fetch("/admin/config/raw", {headers: headers()});
+      const text = await res.text();
+      if (!res.ok) {
+        setStatus(text, false);
+        return;
+      }
+      contentEl.value = text;
+      setStatus("配置已读取", true);
+    }
+
+    async function saveConfig() {
+      setStatus("正在保存配置...", true);
+      const res = await fetch("/admin/config/raw", {
+        method: "POST",
+        headers: {...headers(), "Content-Type": "application/json"},
+        body: JSON.stringify({content: contentEl.value})
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        setStatus(text, false);
+        return;
+      }
+      setStatus("配置已保存并生效", true);
+    }
+
+    loadBtn.addEventListener("click", () => {
+      loadConfig().catch(err => setStatus(String(err), false));
+    });
+
+    saveBtn.addEventListener("click", () => {
+      saveConfig().catch(err => setStatus(String(err), false));
+    });
+
+    rememberBtn.addEventListener("click", () => {
+      localStorage.setItem("onirosGatewayToken", tokenEl.value);
+      setStatus("Key 已保存在当前浏览器", true);
+    });
+  </script>
+</body>
+</html>
