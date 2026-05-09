@@ -19,7 +19,7 @@ routes:
   - provider: "DeepSeek"
     protocol: "OpenAI"
     base_url: "https://api.deepseek.com"
-    api_key_env: "DEEPSEEK_API_KEY"
+    api_key: "deepseek-secret"
     auth:
       header: "Authorization"
       scheme: "Bearer"

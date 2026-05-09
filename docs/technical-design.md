@@ -109,7 +109,7 @@ routes:
   - provider: "deepseek"
     protocol: "openai"
     base_url: "https://api.deepseek.com"
-    api_key_env: "DEEPSEEK_API_KEY"
+    api_key: "your-deepseek-api-key"
     auth:
       header: "Authorization"
       scheme: "Bearer"
@@ -117,7 +117,7 @@ routes:
   - provider: "dashscope"
     protocol: "openai"
     base_url: "https://dashscope.aliyuncs.com/compatible-mode"
-    api_key_env: "DASHSCOPE_API_KEY"
+    api_key: "your-dashscope-api-key"
     auth:
       header: "Authorization"
       scheme: "Bearer"
@@ -125,7 +125,7 @@ routes:
   - provider: "openai"
     protocol: "openai"
     base_url: "https://api.openai.com"
-    api_key_env: "OPENAI_API_KEY"
+    api_key: "your-openai-api-key"
     auth:
       header: "Authorization"
       scheme: "Bearer"
@@ -133,7 +133,7 @@ routes:
   - provider: "anthropic"
     protocol: "anthropic"
     base_url: "https://api.anthropic.com"
-    api_key_env: "ANTHROPIC_API_KEY"
+    api_key: "your-anthropic-api-key"
     auth:
       header: "x-api-key"
 
@@ -147,8 +147,9 @@ http:
 
 - `provider + protocol` 必须唯一。
 - `base_url` 不以 `/` 结尾。
-- 上游 API Key 从环境变量读取，不写死在配置文件里。
-- 网关对内 API Key 可以先写在配置里，后续再接环境变量或密钥管理。
+- 上游 API Key 直接写在本地 `config.yaml` 的 route `api_key` 字段中。
+- `config.yaml` 不提交到 git；仓库中只保留带占位值的 `config.example.yaml`。
+- 网关对内 API Key 也写在本地配置里。
 
 ## 5. 请求处理流程
 
@@ -180,7 +181,7 @@ http:
 - `upgrade`
 - 客户端传入的上游鉴权 header
 
-网关应避免把内网客户端的 `Authorization` 原样传给上游，除非该路由明确配置为透传。默认行为是用配置中的 `api_key_env` 注入上游鉴权信息。
+网关应避免把内网客户端的 `Authorization` 原样传给上游，除非该路由明确配置为透传。默认行为是用配置中的 `api_key` 注入上游鉴权信息。
 
 ## 6. 流式响应
 
@@ -217,9 +218,9 @@ http:
 
 对上游鉴权：
 
-- 每条 route 配置 `api_key_env`。
-- 启动时可以不强制要求所有环境变量存在。
-- 请求命中某条 route 时，如果对应环境变量不存在，返回 502 配置错误。
+- 每条 route 直接配置 `api_key`。
+- 启动时可以不强制要求所有 route 都有 `api_key`。
+- 请求命中某条 route 时，如果该 route 缺少 `api_key`，返回 502 配置错误。
 - 根据 route 的 `auth.header` 和 `auth.scheme` 注入上游鉴权 header。
 
 示例：
@@ -311,15 +312,6 @@ cp config.example.yaml config.yaml
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-环境变量示例：
-
-```bash
-export DEEPSEEK_API_KEY="..."
-export DASHSCOPE_API_KEY="..."
-export OPENAI_API_KEY="..."
-export ANTHROPIC_API_KEY="..."
-```
-
 systemd 部署示例：
 
 ```ini
@@ -329,7 +321,7 @@ After=network.target
 
 [Service]
 WorkingDirectory=/opt/oniros-ai-gateway
-EnvironmentFile=/opt/oniros-ai-gateway/.env
+Environment=ONIROS_CONFIG=/opt/oniros-ai-gateway/config.yaml
 ExecStart=/opt/oniros-ai-gateway/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=3
@@ -423,7 +415,7 @@ pytest
 - `/deepseek/openai/v1/chat/completions` 能转发到 DeepSeek OpenAI-compatible API。
 - `/dashscope/openai/v1/chat/completions` 能转发到 DashScope compatible-mode API。
 - `/anthropic/anthropic/v1/messages` 能转发到 Anthropic API。
-- 上游 API Key 只存在于网关环境变量中，客户端不需要知道。
+- 上游 API Key 只存在于网关本地 `config.yaml` 中，客户端不需要知道。
 - 普通响应和流式响应都可以透传。
 - 未配置的 `provider + protocol` 返回明确 404。
 - 鉴权失败返回 401。

@@ -18,14 +18,14 @@ def settings() -> Settings:
                 provider="deepseek",
                 protocol="openai",
                 base_url="https://api.deepseek.com",
-                api_key_env="DEEPSEEK_API_KEY",
+                api_key="deepseek-secret",
                 auth=UpstreamAuthConfig(header="Authorization", scheme="Bearer"),
             ),
             RouteConfig(
                 provider="anthropic",
                 protocol="anthropic",
                 base_url="https://api.anthropic.com",
-                api_key_env="ANTHROPIC_API_KEY",
+                api_key="anthropic-secret",
                 auth=UpstreamAuthConfig(header="x-api-key"),
             ),
         ],
@@ -34,10 +34,7 @@ def settings() -> Settings:
 
 
 @pytest.fixture
-def client(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    monkeypatch.setenv("DEEPSEEK_API_KEY", "deepseek-secret")
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "anthropic-secret")
-
+def client(settings: Settings) -> Iterator[TestClient]:
     from app.main import create_app
 
     with TestClient(create_app(settings)) as test_client:

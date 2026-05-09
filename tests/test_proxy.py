@@ -63,8 +63,10 @@ def test_unknown_route_returns_404(client: TestClient) -> None:
 
 
 @respx.mock
-def test_missing_upstream_api_key_returns_502(client: TestClient, monkeypatch) -> None:
-    monkeypatch.delenv("DEEPSEEK_API_KEY")
+def test_missing_upstream_api_key_returns_502(client: TestClient, settings) -> None:
+    route = settings.find_route("deepseek", "openai")
+    assert route is not None
+    route.api_key = None
 
     response = client.post(
         "/deepseek/openai/v1/chat/completions",
@@ -73,7 +75,9 @@ def test_missing_upstream_api_key_returns_502(client: TestClient, monkeypatch) -
     )
 
     assert response.status_code == 502
-    assert response.json()["detail"]["error"] == "missing upstream api key env: DEEPSEEK_API_KEY"
+    assert response.json()["detail"]["error"] == (
+        "missing upstream api key for provider=deepseek, protocol=openai"
+    )
 
 
 @respx.mock

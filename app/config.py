@@ -26,7 +26,7 @@ class RouteConfig(BaseModel):
     provider: str
     protocol: str
     base_url: HttpUrl
-    api_key_env: str | None = None
+    api_key: str | None = None
     auth: UpstreamAuthConfig | None = None
 
     @field_validator("provider", "protocol")

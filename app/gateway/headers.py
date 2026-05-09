@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Mapping
 
 from app.config import RouteConfig
@@ -37,11 +36,16 @@ def build_upstream_headers(headers: Mapping[str, str], route: RouteConfig) -> di
         name: value for name, value in headers.items() if name.lower() not in blocked
     }
 
-    if route.auth is not None and route.api_key_env:
-        api_key = os.getenv(route.api_key_env)
-        if not api_key:
-            raise gateway_error(502, f"missing upstream api key env: {route.api_key_env}")
-        upstream_headers[route.auth.header] = _format_auth_value(api_key, route.auth.scheme)
+    if route.auth is not None:
+        if not route.api_key:
+            message = (
+                f"missing upstream api key for provider={route.provider}, protocol={route.protocol}"
+            )
+            raise gateway_error(
+                502,
+                message,
+            )
+        upstream_headers[route.auth.header] = _format_auth_value(route.api_key, route.auth.scheme)
 
     return upstream_headers
 
