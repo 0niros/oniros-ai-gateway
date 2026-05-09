@@ -1,0 +1,45 @@
+server:
+  host: "0.0.0.0"
+  port: 8000
+
+gateway_auth:
+  enabled: true
+  api_keys:
+    - "local-dev-key"
+
+routes:
+  - provider: "deepseek"
+    protocol: "openai"
+    base_url: "https://api.deepseek.com"
+    api_key_env: "DEEPSEEK_API_KEY"
+    auth:
+      header: "Authorization"
+      scheme: "Bearer"
+
+  - provider: "dashscope"
+    protocol: "openai"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode"
+    api_key_env: "DASHSCOPE_API_KEY"
+    auth:
+      header: "Authorization"
+      scheme: "Bearer"
+
+  - provider: "openai"
+    protocol: "openai"
+    base_url: "https://api.openai.com"
+    api_key_env: "OPENAI_API_KEY"
+    auth:
+      header: "Authorization"
+      scheme: "Bearer"
+
+  - provider: "anthropic"
+    protocol: "anthropic"
+    base_url: "https://api.anthropic.com"
+    api_key_env: "ANTHROPIC_API_KEY"
+    auth:
+      header: "x-api-key"
+
+http:
+  connect_timeout_seconds: 10
+  read_timeout_seconds: 300
+  max_request_body_mb: 20

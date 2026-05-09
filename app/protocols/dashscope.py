@@ -1,0 +1,1 @@
+"""DashScope protocol extension point."""
