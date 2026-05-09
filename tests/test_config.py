@@ -54,3 +54,28 @@ routes:
 
     with pytest.raises(RuntimeError, match="duplicate route"):
         load_settings(config_path)
+
+
+def test_routes_default_to_empty_list(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        """
+server:
+  host: "0.0.0.0"
+  port: 80
+gateway_auth:
+  enabled: true
+  api_keys:
+    - "local-dev-key"
+http:
+  connect_timeout_seconds: 10
+  read_timeout_seconds: 300
+  max_request_body_mb: 200
+""",
+        encoding="utf-8",
+    )
+
+    settings = load_settings(config_path)
+
+    assert settings.routes == []
+    assert settings.find_route("deepseek", "openai") is None

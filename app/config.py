@@ -57,7 +57,7 @@ class HttpConfig(BaseModel):
 class Settings(BaseModel):
     server: ServerConfig = Field(default_factory=ServerConfig)
     gateway_auth: GatewayAuthConfig = Field(default_factory=GatewayAuthConfig)
-    routes: list[RouteConfig]
+    routes: list[RouteConfig] = Field(default_factory=list)
     http: HttpConfig = Field(default_factory=HttpConfig)
 
     @model_validator(mode="after")
