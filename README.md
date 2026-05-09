@@ -99,10 +99,10 @@ POST /anthropic/anthropic/v1/messages
 - 如果没有 `config.yaml`，从 `config.example.yaml` 复制一份。
 - 使用 `uvicorn` 启动服务。
 
-默认监听：
+默认监听地址来自 `config.yaml`：
 
 ```text
-http://0.0.0.0:8000
+server.host + server.port
 ```
 
 可通过环境变量覆盖：
